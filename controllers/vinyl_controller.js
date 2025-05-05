@@ -1,5 +1,13 @@
+const connection = require('../data/data.js')
+
 function index(req, res) {
-    res.send("this is the index route!")
+    const sql = `SELECT * FROM vinyls`
+    connection.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err })
+        //console.log(results)
+        else res.json(results)
+        console.log("index route used!")
+    })
 }
 function show(req, res) {
     res.send("this is the show route!")
