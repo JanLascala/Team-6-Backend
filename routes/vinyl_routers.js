@@ -7,6 +7,8 @@ router.get('/', vinyl_controller.index)
 
 router.get('/:slug', vinyl_controller.show)
 
+router.get('/recent', vinyl_controller.recent)
+
 router.post('/', vinyl_controller.store)
 
 router.put('/:slug', vinyl_controller.update)
