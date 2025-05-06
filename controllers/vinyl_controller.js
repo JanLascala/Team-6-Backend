@@ -1,13 +1,26 @@
 const connection = require('../data/data.js')
 
-//recent route
+
 function index(req, res) {
-    res.send("this is the index route!")
+    const sql = `
+                SELECT vinyls.id as productId, vinyls.slug, vinyls.title, vinyls.img_url as vinylImg, vinyls.genre, vinyls.format, vinyls.release_date, vinyls.price, vinyls.n_available, authors.name as authorName, authors.img_url as authorImg, publishers.name as publisherName
+FROM vinyls
+LEFT JOIN authors on authors.id = author_id
+LEFT JOIN publishers on publishers.id = publisher_id
+ORDER BY release_Date DESC;
+                `
+
+    connection.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err })
+        //console.log(results)
+        else res.json(results)
+        console.log("index route used!")
+    })
 }
 function show(req, res) {
     res.send("this is the show route!")
 }
-
+//recent route
 function recent(req, res) {
     const sql = `
                 SELECT *
@@ -23,16 +36,16 @@ function recent(req, res) {
         console.log("recent route used!")
     })
 }
-
+//filter by genre route
 function by_genre(req, res) {
-    //const genre= req.params.
+    const genre = req.body.genre;
     const sql = `
                 SELECT *
                 FROM vinyls
-                WHERE genre === ?
+                WHERE genre = ?
                 LIMIT 10;`
 
-    connection.query(sql, (err, results) => {
+    connection.query(sql, [genre], (err, results) => {
         if (err) return res.status(500).json({ error: err })
         //console.log(results)
         else res.json(results)
@@ -58,6 +71,7 @@ module.exports = {
     index,
     show,
     recent,
+    by_genre,
     store,
     update,
     modify,

@@ -9,13 +9,13 @@ app.listen(port, () => {
     console.log(`server is running on http://localhost:${port} `)
 })
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
     res.send("welcome to my api")
 })
 
 app.use(express.json());
 app.use(express.static('public'))
-app.use('/vinyls', vinyl_routers)
+app.use('/api/vinyls', vinyl_routers)
 
 //middlewares
 
