@@ -20,4 +20,3 @@ router.patch('/:slug', vinyl_controller.modify)
 router.delete('/:slug', vinyl_controller.destroy)
 
 module.exports = router
-
