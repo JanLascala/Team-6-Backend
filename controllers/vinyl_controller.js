@@ -3,7 +3,7 @@ const connection = require('../data/data.js')
 
 function index(req, res) {
     const sql = `
-                SELECT vinyls.id as productId, vinyls.slug, vinyls.title, vinyls.imgUrl as vinylImg, vinyls.genre, vinyls.format, vinyls.releaseDate, vinyls.price, vinyls.nAvailable, authors.name as authorName, authors.imgUrl as authorImg, publishers.name as publisherName
+                SELECT vinyls.id as productId, vinyls.slug, vinyls.title, vinyls.imgUrl as vinylImg, vinyls.genre, vinyls.format, DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate, vinyls.price, vinyls.nAvailable, authors.name as authorName, authors.imgUrl as authorImg, publishers.name as publisherName
 FROM vinyls
 LEFT JOIN authors on authors.id = author_id
 LEFT JOIN publishers on publishers.id = publisher_id
