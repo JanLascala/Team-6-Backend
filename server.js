@@ -1,6 +1,9 @@
 const express = require('express')
 const cors = require('cors')
+const Stripe = require('stripe')
+require('dotenv').config()
 const app = express()
+const stripe = Stripe(process.env.STRIPE_KEY)
 const port = 3000
 const vinyl_routers = require('./routes/vinyl_routers')
 const errorsHandler = require('./middlewares/errors.js')
