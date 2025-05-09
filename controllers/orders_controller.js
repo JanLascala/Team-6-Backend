@@ -4,7 +4,7 @@ const stripe = Stripe(process.env.STRIPE_KEY)
 
 async function create_payment_intent(req, res) {
     console.log(req.body);
-    const { cart, description, customerName, customerEmail } = req.body;
+    const { cart, description, customerName, customerEmail, customerPhone, customerAddress } = req.body;
     console.log("create payment route used!");
 
     if (!cart || cart.length === 0) {
@@ -12,6 +12,7 @@ async function create_payment_intent(req, res) {
     }
 
     try {
+
         const getPrice = (id) => {
             return new Promise((resolve, reject) => {
                 connection.query('SELECT price FROM vinyls WHERE id = ?', [id], (err, results) => {
@@ -25,12 +26,12 @@ async function create_payment_intent(req, res) {
         let totalAmount = 0;
         for (const item of cart) {
             const price = await getPrice(item.id);
-            totalAmount += price * item.quantity * 100;
+            totalAmount += price * item.quantity * 100; // Total amount in cents
         }
 
         const shippingCost = 1200;
         if (totalAmount <= 10000) {
-            totalAmount += shippingCost;
+            totalAmount += shippingCost; // Add shipping cost if the total is less than $100
             console.log("Shipping cost added");
         }
 
@@ -45,56 +46,100 @@ async function create_payment_intent(req, res) {
             }
         });
 
-        console.log("Client secret sent!");
-        res.send({ clientSecret: paymentIntent.client_secret });
+        console.log("Payment Intent created with client secret:", paymentIntent.client_secret);
+
+        const orderSql = `
+            INSERT INTO orders (name, email, address, phoneNumber, status, itemsPrice, paymentIntentId)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        connection.query(orderSql, [
+            customerName,
+            customerEmail,
+            customerAddress,
+            customerPhone,
+            'pending',
+            totalAmount / 100, //divided by 100 to keep value in dollars
+            paymentIntent.id
+        ], (err, orderResult) => {
+            if (err) return console.error("Order insert failed:", err.message);
+
+            const orderId = orderResult.insertId;
+
+            const orderItemsSql = 'INSERT INTO vinyl_order (orderId, vinylId, quantity) VALUES ?';
+            const orderItemsData = cart.map(item => [orderId, item.id, item.quantity]);
+
+            connection.query(orderItemsSql, [orderItemsData], (err) => {
+                if (err) return console.error("Order items insert failed:", err.message);
+                console.log(`Order ${orderId} created successfully.`);
+            });
+
+            res.send({ clientSecret: paymentIntent.client_secret, orderId });
+        });
 
     } catch (err) {
         console.error("Payment intent creation failed:", err);
         res.status(500).json({ error: err.message });
     }
-
 }
 
-function create_order_entry(req, res) {
-    const { customerName, customerEmail, phone, cart, paymentIntentId } = req.body;
-
-    if (!cart || cart.length === 0) {
-        return res.status(400).json({ error: 'Cart is empty' });
+function update_order_entry(req, res) {
+    console.log("update order status route used!")
+    const { orderId } = req.body;
+    console.log(`updating order ${orderId}...`)
+    if (!orderId) {
+        console.log(`could not find an orderId`)
+        return res.status(400).json({ error: 'Order ID is required.' });
     }
 
-    stripe.paymentIntents.retrieve(paymentIntentId)
-        .then(paymentIntent => {
+    const getOrderSql = 'SELECT paymentIntentId FROM orders WHERE id = ?';
 
-            const totalAmount = paymentIntent.metadata.totalAmount;
+    connection.query(getOrderSql, [orderId], (err, results) => {
+        if (err) {
+            console.error("Error retrieving order from database:", err);
+            return res.status(500).json({ error: 'Error retrieving order from database.' });
+        }
 
-            if (!totalAmount) {
-                return res.status(400).json({ error: 'Total amount is missing in payment intent metadata' });
-            }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Order not found.' });
+        }
 
-            const orderSql = 'INSERT INTO orders (name, email, address, phoneNumber, status, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)';
-            connection.query(orderSql, [customerName, customerEmail, "TODO add address", phone, 'paid', totalAmount], (err, orderResult) => {
-                if (err) return res.status(500).json({ error: err.message });
+        const paymentIntentId = results[0].paymentIntentId;
 
-                const orderId = orderResult.insertId;
+        stripe.paymentIntents.retrieve(paymentIntentId)
+            .then(paymentIntent => {
+                let updateOrderSql = ''
+                let status = ''
+                if (paymentIntent.status === 'succeeded') {
+                    updateOrderSql = 'UPDATE orders SET status = ? WHERE id = ?';
+                    status = 'succeeded'
+                } else if (paymentIntent.status != 'succeeded') {
+                    updateOrderSql = 'UPDATE orders SET status = ? WHERE id = ?';
+                    status = 'failed'
+                } else {
+                    return res.status(400).json({ error: 'Invalid payment status or order update status.' });
+                }
 
-                const orderItemsSql = 'INSERT INTO order_items (order_id, vinyl_id, quantity) VALUES ?';
-                const orderItemsData = cart.map(item => [orderId, item.id, item.quantity]);
+                connection.query(updateOrderSql, [status, orderId], (err) => {
+                    if (err) {
+                        console.error("Error updating order status:", err);
+                        return res.status(500).json({ error: 'Error updating order status.' });
+                    }
 
-                connection.query(orderItemsSql, [orderItemsData], (err) => {
-                    if (err) return res.status(500).json({ error: err.message });
-
-                    res.status(201).json({ message: 'Order created', orderId });
+                    res.status(200).json({ message: `Order status updated to ${status}.` });
                 });
+
+            })
+            .catch(err => {
+                console.error('Error retrieving payment intent:', err);
+                res.status(500).json({ error: 'Error retrieving payment intent from Stripe.' });
             });
-        })
-        .catch(err => {
-            console.error('Error retrieving payment intent:', err);
-            res.status(500).json({ error: 'Error retrieving payment intent' });
-        });
+    });
 }
+
 
 
 module.exports = {
     create_payment_intent,
-    create_order_entry
+    update_order_entry
 }
