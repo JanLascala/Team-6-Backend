@@ -19,6 +19,20 @@ app.get("/api", (req, res) => {
     res.send("welcome to my api")
 })
 
+app.post('/create-payment-intent', async (req, res) => {
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: 2000,
+            currency: 'usd',
+            automatic_payment_methods: { enabled: true },
+        });
+
+        res.send({ clientSecret: paymentIntent.client_secret });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.use(express.json());
 app.use(express.static('public'))
 app.use('/api/vinyls', vinyl_routers)
