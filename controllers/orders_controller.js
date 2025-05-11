@@ -133,13 +133,13 @@ function update_order_entry(req, res) {
                             await transporter.sendMail({
                                 from: '"VinylStore" <no-reply@vinylstore.com>',
                                 to: process.env.MAIL_USER,
-                                subject: 'Conferma ordine',
-                                text: `Grazie per il tuo ordine! Il tuo numero ordine è ${orderId}.`,
-                                html: `<h3>Grazie per il tuo ordine!</h3><p>Il tuo numero ordine è <b>${orderId}</b>.</p>`
+                                subject: 'Order confirmed',
+                                text: `Thank you for your order! Your order number is ${orderId}.`,
+                                html: `<h3>Thank you for your order!</h3><p>Your order number is <b>${orderId}</b>.</p>`
                             });
-                            console.log('Email di conferma inviata.');
+                            console.log('Payment confirmation email was sent');
                         } catch (mailErr) {
-                            console.error('Errore invio email:', mailErr);
+                            console.error('Email sending error:', mailErr);
                         }
                     }
 
