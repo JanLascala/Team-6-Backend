@@ -1,6 +1,8 @@
 const connection = require('../data/data.js')
 const Stripe = require('stripe')
 const stripe = Stripe(process.env.STRIPE_KEY)
+const createTransport = require('../utilities/mail-transport.js');
+const transporter = createTransport();
 
 async function create_payment_intent(req, res) {
     console.log(req.body);
@@ -120,10 +122,25 @@ function update_order_entry(req, res) {
                     return res.status(400).json({ error: 'Invalid payment status or order update status.' });
                 }
 
-                connection.query(updateOrderSql, [status, orderId], (err) => {
+                connection.query(updateOrderSql, [status, orderId], async (err) => {
                     if (err) {
                         console.error("Error updating order status:", err);
                         return res.status(500).json({ error: 'Error updating order status.' });
+                    }
+
+                    if (status === 'succeeded') {
+                        try {
+                            await transporter.sendMail({
+                                from: '"VinylStore" <no-reply@vinylstore.com>',
+                                to: process.env.MAIL_USER,
+                                subject: 'Conferma ordine',
+                                text: `Grazie per il tuo ordine! Il tuo numero ordine è ${orderId}.`,
+                                html: `<h3>Grazie per il tuo ordine!</h3><p>Il tuo numero ordine è <b>${orderId}</b>.</p>`
+                            });
+                            console.log('Email di conferma inviata.');
+                        } catch (mailErr) {
+                            console.error('Errore invio email:', mailErr);
+                        }
                     }
 
                     res.status(200).json({ message: `Order status updated to ${status}.` });
@@ -136,8 +153,6 @@ function update_order_entry(req, res) {
             });
     });
 }
-
-
 
 module.exports = {
     create_payment_intent,
