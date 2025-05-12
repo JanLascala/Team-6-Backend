@@ -9,12 +9,28 @@ async function create_payment_intent(req, res) {
     const { cart, description, customerName, customerEmail, customerPhone, customerAddress } = req.body;
     console.log("create payment route used!");
 
-    if (!cart || cart.length === 0) {
-        return res.status(400).json({ error: 'Cart is empty' });
+    // Basic validations
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: 'Cart is empty or not valid.' });
+    }
+
+    if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 2) {
+        return res.status(400).json({ error: 'Customer name is required and must be at least 2 characters.' });
+    }
+
+    if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+        return res.status(400).json({ error: 'Valid email is required.' });
+    }
+
+    if (!customerPhone || !/^\+?[0-9\s\-()]{7,15}$/.test(customerPhone)) {
+        return res.status(400).json({ error: 'Valid phone number is required.' });
+    }
+
+    if (!customerAddress || typeof customerAddress !== 'string' || customerAddress.trim().length < 5) {
+        return res.status(400).json({ error: 'Customer address is required and must be at least 5 characters.' });
     }
 
     try {
-
         const getPrice = (id) => {
             return new Promise((resolve, reject) => {
                 connection.query('SELECT price FROM vinyls WHERE id = ?', [id], (err, results) => {
@@ -27,13 +43,16 @@ async function create_payment_intent(req, res) {
 
         let totalAmount = 0;
         for (const item of cart) {
+            if (!item.id || typeof item.quantity !== 'number' || item.quantity <= 0) {
+                return res.status(400).json({ error: 'Cart item must include valid id and quantity.' });
+            }
             const price = await getPrice(item.id);
-            totalAmount += price * item.quantity * 100; // Total amount in cents
+            totalAmount += price * item.quantity * 100; // in cents
         }
 
         const shippingCost = 1200;
         if (totalAmount <= 10000) {
-            totalAmount += shippingCost; // Add shipping cost if the total is less than $100
+            totalAmount += shippingCost;
             console.log("Shipping cost added");
         }
 
@@ -61,10 +80,13 @@ async function create_payment_intent(req, res) {
             customerAddress,
             customerPhone,
             'pending',
-            totalAmount / 100, //divided by 100 to keep value in dollars
+            totalAmount / 100,
             paymentIntent.id
         ], (err, orderResult) => {
-            if (err) return console.error("Order insert failed:", err.message);
+            if (err) {
+                console.error("Order insert failed:", err.message);
+                return res.status(500).json({ error: 'Failed to create order.' });
+            }
 
             const orderId = orderResult.insertId;
 
@@ -72,18 +94,22 @@ async function create_payment_intent(req, res) {
             const orderItemsData = cart.map(item => [orderId, item.id, item.quantity]);
 
             connection.query(orderItemsSql, [orderItemsData], (err) => {
-                if (err) return console.error("Order items insert failed:", err.message);
-                console.log(`Order ${orderId} created successfully.`);
-            });
+                if (err) {
+                    console.error("Order items insert failed:", err.message);
+                    return res.status(500).json({ error: 'Failed to insert order items.' });
+                }
 
-            res.send({ clientSecret: paymentIntent.client_secret, orderId });
+                console.log(`Order ${orderId} created successfully.`);
+                res.send({ clientSecret: paymentIntent.client_secret, orderId });
+            });
         });
 
     } catch (err) {
         console.error("Payment intent creation failed:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 }
+
 
 function update_order_entry(req, res) {
     console.log("update order status route used!")

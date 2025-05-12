@@ -5,20 +5,20 @@ const vinyl_controller = require('../controllers/vinyl_controller')
 
 router.get('/', vinyl_controller.index)
 
-router.get('/search', vinyl_controller.filter_vinyls)
-
-router.get('/recent', vinyl_controller.recent)
-
 router.get('/single-vinyl/:slug', vinyl_controller.show)
 
-router.post('/by_genre', vinyl_controller.by_genre)
+router.get('/search', vinyl_controller.filter_vinyls)
 
-router.post('/', vinyl_controller.store)
+//router.get('/recent', vinyl_controller.recent)
 
-router.put('/:slug', vinyl_controller.update)
+//router.post('/by_genre', vinyl_controller.by_genre)
 
-router.patch('/:slug', vinyl_controller.modify)
+//router.post('/', vinyl_controller.store)
 
-router.delete('/:slug', vinyl_controller.destroy)
+//router.put('/:slug', vinyl_controller.update)
+
+//router.patch('/:slug', vinyl_controller.modify)
+
+//router.delete('/:slug', vinyl_controller.destroy)
 
 module.exports = router

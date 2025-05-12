@@ -70,38 +70,6 @@ function show(req, res) {
         console.log("show route used!")
     })
 }
-//recent route
-function recent(req, res) {
-    const sql = `
-                SELECT *
-                FROM vinyls
-                WHERE release_Date < CURRENT_DATE()
-                ORDER BY release_Date DESC
-                LIMIT 10;`
-
-    connection.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err })
-        //console.log(results)
-        else res.json(results)
-        console.log("recent route used!")
-    })
-}
-//filter by genre route
-function by_genre(req, res) {
-    const genre = req.body.genre;
-    const sql = `
-                SELECT *
-                FROM vinyls
-                WHERE genre = ?
-                LIMIT 10;`
-
-    connection.query(sql, [genre], (err, results) => {
-        if (err) return res.status(500).json({ error: err })
-        //console.log(results)
-        else res.json(results)
-        console.log("by_genre route used!")
-    })
-}
 
 function filter_vinyls(req, res) {
     const { filter, search } = req.query;
@@ -201,30 +169,60 @@ function filter_vinyls(req, res) {
 }
 
 
+//recent route
+// function recent(req, res) {
+//     const sql = `
+//                 SELECT *
+//                 FROM vinyls
+//                 WHERE release_Date < CURRENT_DATE()
+//                 ORDER BY release_Date DESC
+//                 LIMIT 10;`
 
+//     connection.query(sql, (err, results) => {
+//         if (err) return res.status(500).json({ error: err })
+//         //console.log(results)
+//         else res.json(results)
+//         console.log("recent route used!")
+//     })
+// }
+//filter by genre route
+// function by_genre(req, res) {
+//     const genre = req.body.genre;
+//     const sql = `
+//                 SELECT *
+//                 FROM vinyls
+//                 WHERE genre = ?
+//                 LIMIT 10;`
 
+//     connection.query(sql, [genre], (err, results) => {
+//         if (err) return res.status(500).json({ error: err })
+//         //console.log(results)
+//         else res.json(results)
+//         console.log("by_genre route used!")
+//     })
+// }
 
-function store(req, res) {
-    res.send("this is the store route!")
-}
-function update(req, res) {
-    res.send("this is the update route!")
-}
-function modify(req, res) {
-    res.send("this is the modify route!")
-}
-function destroy(req, res) {
-    res.send("this is the destroy route!")
-}
+// function store(req, res) {
+//     res.send("this is the store route!")
+// }
+// function update(req, res) {
+//     res.send("this is the update route!")
+// }
+// function modify(req, res) {
+//     res.send("this is the modify route!")
+// }
+// function destroy(req, res) {
+//     res.send("this is the destroy route!")
+// }
 
 module.exports = {
     index,
     show,
-    recent,
-    by_genre,
+    //recent,
+    //by_genre,
     filter_vinyls,
-    store,
-    update,
-    modify,
-    destroy
+    //store,
+    //update,
+    //modify,
+    //destroy
 }
