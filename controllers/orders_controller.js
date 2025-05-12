@@ -87,6 +87,7 @@ async function create_payment_intent(req, res) {
 
 function update_order_entry(req, res) {
     console.log("update order status route used!")
+    const { customerName, customerEmail, customerPhone, customerAddress } = req.body;
     const { orderId } = req.body;
     console.log(`updating order ${orderId}...`)
     if (!orderId) {
@@ -132,14 +133,19 @@ function update_order_entry(req, res) {
                         try {
                             await transporter.sendMail({
                                 from: '"VinylStore" <no-reply@vinylstore.com>',
-                                to: process.env.MAIL_USER,
+                                to: customerEmail,
                                 subject: 'Order confirmed',
-                                text: `Thank you for your order at VinylStore!\n\n` +
+                                text: `Thank you for your order at VinylStore, ${customerName}!\n\n` +
                                     `We're happy to confirm that your payment has been processed successfully.\n\n` +
                                     `Order Details:\n` +
                                     `Order Number: ${orderId}\n` +
                                     `Order Date: ${new Date().toLocaleDateString()}\n` +
                                     `Order Status: Confirmed\n\n` +
+                                    `Customer Info:\n` +
+                                    `Name: ${customerName}\n` +
+                                    `Email: ${customerEmail}\n` +
+                                    `Phone: ${customerPhone}\n` +
+                                    `Address: ${customerAddress}\n\n` +
                                     `We'll send you another notification when your order ships. You can expect your items to arrive within 5-7 business days.\n\n` +
                                     `If you have any questions about your order, please contact our customer service team at support@vinylstore.com or call us at (555) 123-4567.\n\n` +
                                     `Thank you for shopping with VinylStore!\n\n` +
@@ -147,7 +153,7 @@ function update_order_entry(req, res) {
                                 html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
                                         <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0;">
                                             <h2 style="color: #333;">Order Confirmation</h2>
-                                            <p style="color: #666;">Thank you for your purchase!</p>
+                                            <p style="color: #666;">Thank you for your purchase, ${customerName}!</p>
                                         </div>
                                         
                                         <div style="padding: 20px 0;">
@@ -159,6 +165,14 @@ function update_order_entry(req, res) {
                                                 <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
                                                 <p><strong>Status:</strong> Confirmed</p>
                                             </div>
+                            
+                                            <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                                <h3 style="margin-top: 0; color: #333;">Customer Information</h3>
+                                                <p><strong>Name:</strong> ${customerName}</p>
+                                                <p><strong>Email:</strong> ${customerEmail}</p>
+                                                <p><strong>Phone:</strong> ${customerPhone}</p>
+                                                <p><strong>Address:</strong> ${customerAddress}</p>
+                                            </div>
                                             
                                             <p>We'll send you another notification when your order ships. You can expect your items to arrive within 5-7 business days.</p>
                                             
@@ -166,7 +180,8 @@ function update_order_entry(req, res) {
                                         </div>
                                         
                                         <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-top: 20px;">
-                                            <p style="margin: 0;">Questions about your order? Contact our customer service team at <a href="mailto:support@vinylstore.com">support@vinylstore.com</a> or call us at (555) 123-4567.</p>
+                                            <p style="margin: 0;">Questions about your order? Contact our customer service team at 
+                                            <a href="mailto:support@vinylstore.com">support@vinylstore.com</a> or call us at (555) 123-4567.</p>
                                         </div>
                                         
                                         <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #777;">
@@ -175,6 +190,7 @@ function update_order_entry(req, res) {
                                         </div>
                                     </div>`
                             });
+
                             console.log('Payment confirmation email was sent');
                         } catch (mailErr) {
                             console.error('Email sending error:', mailErr);
