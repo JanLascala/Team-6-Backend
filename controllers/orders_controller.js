@@ -85,7 +85,7 @@ async function create_payment_intent(req, res) {
         ], (err, orderResult) => {
             if (err) {
                 console.error("Order insert failed:", err.message);
-                return res.status(500).json({ error: 'Failed to create order.' });
+                return res.status(500).json({ error: `Failed to create order. ${err}}` });
             }
 
             const orderId = orderResult.insertId;
