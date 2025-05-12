@@ -5,9 +5,11 @@ const vinyl_controller = require('../controllers/vinyl_controller')
 
 router.get('/', vinyl_controller.index)
 
+router.get('/search', vinyl_controller.filter_vinyls)
+
 router.get('/recent', vinyl_controller.recent)
 
-router.get('/:slug', vinyl_controller.show)
+router.get('/single-vinyl/:slug', vinyl_controller.show)
 
 router.post('/by_genre', vinyl_controller.by_genre)
 

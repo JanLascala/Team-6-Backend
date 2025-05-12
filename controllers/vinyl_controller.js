@@ -103,6 +103,106 @@ function by_genre(req, res) {
     })
 }
 
+function filter_vinyls(req, res) {
+    const { filter, search } = req.query;
+    let sql = `
+        SELECT 
+            vinyls.slug,
+            vinyls.title,
+            vinyls.imgUrl AS vinylImg,
+            genres.genreName,
+            formats.formatName,
+            DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate,
+            vinyls.price,
+            vinyls.nAvailable,
+            authors.name AS authorName
+        FROM vinyls
+        LEFT JOIN genres ON genres.id = vinyls.genreId
+        LEFT JOIN formats ON formats.id = vinyls.formatId
+        LEFT JOIN authors ON authors.id = vinyls.authorId
+    `;
+
+    let params = [];
+
+    if (filter === "genre") {
+        sql += " WHERE genres.genreName LIKE ?";
+        params.push('%' + search + '%');
+    } else if (filter === "author") {
+        sql += " WHERE authors.name LIKE ?";
+        params.push('%' + search + '%');
+    } else if (filter === "title") {
+        sql += " WHERE vinyls.title LIKE ?";
+        params.push('%' + search + '%');
+    } else if (filter === "all") {
+        sql += " WHERE vinyls.title LIKE ? OR authors.name LIKE ? OR genres.genreName LIKE ?";
+        params.push('%' + search + '%', '%' + search + '%', '%' + search + '%');
+    }
+
+    sql += " GROUP BY vinyls.slug, vinyls.title, vinyls.imgUrl, genres.genreName, formats.formatName, vinyls.releaseDate, vinyls.price, authors.name";
+
+    if (filter === "all") {
+        sql = `
+            SELECT 
+                vinyls.slug,
+                vinyls.title,
+                vinyls.imgUrl AS vinylImg,
+                genres.genreName,
+                formats.formatName,
+                DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate,
+                vinyls.price,
+                vinyls.nAvailable,
+                authors.name AS authorName,
+                (
+                    CASE 
+                        WHEN vinyls.title LIKE ? THEN 10
+                        WHEN vinyls.title LIKE ? THEN 3
+                        WHEN vinyls.title LIKE ? THEN 1
+                        ELSE 0 
+                    END 
+                    +
+                    CASE 
+                        WHEN authors.name LIKE ? THEN 2
+                        ELSE 0 
+                    END
+                    +
+                    CASE 
+                        WHEN genres.genreName LIKE ? THEN 1
+                        ELSE 0 
+                    END
+                ) AS score
+            FROM vinyls
+            LEFT JOIN genres ON genres.id = vinyls.genreId
+            LEFT JOIN formats ON formats.id = vinyls.formatId
+            LEFT JOIN authors ON authors.id = vinyls.authorId
+            WHERE vinyls.title LIKE ? OR authors.name LIKE ? OR genres.genreName LIKE ?
+            GROUP BY vinyls.slug, vinyls.title, vinyls.imgUrl, genres.genreName, formats.formatName, vinyls.releaseDate, vinyls.price, authors.name
+            HAVING score > 0
+            ORDER BY score DESC
+        `;
+
+        params = [
+            search + '%', // For title (exact match)
+            '%' + search + '%', // For title
+            '%' + search + '%', // For title
+            '%' + search + '%', // For author
+            '%' + search + '%', // For genre
+            '%' + search + '%', // For title
+            '%' + search + '%', // For author
+            '%' + search + '%'  // For genre
+        ];
+    }
+
+    connection.query(sql, params, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err });
+        }
+        res.json(results);
+    });
+}
+
+
+
+
 
 function store(req, res) {
     res.send("this is the store route!")
@@ -122,6 +222,7 @@ module.exports = {
     show,
     recent,
     by_genre,
+    filter_vinyls,
     store,
     update,
     modify,
