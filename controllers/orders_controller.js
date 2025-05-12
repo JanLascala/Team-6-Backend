@@ -51,7 +51,7 @@ async function create_payment_intent(req, res) {
         }
 
         const shippingCost = 1200;
-        if (totalAmount <= 10000) {
+        if (totalAmount < 10000) {
             totalAmount += shippingCost;
             console.log("Shipping cost added");
         }
