@@ -170,37 +170,98 @@ function filter_vinyls(req, res) {
 
 
 //recent route
-// function recent(req, res) {
-//     const sql = `
-//                 SELECT *
-//                 FROM vinyls
-//                 WHERE release_Date < CURRENT_DATE()
-//                 ORDER BY release_Date DESC
-//                 LIMIT 10;`
+function recent(req, res) {
+    const sql = `
+        SELECT 
+            vinyls.slug,
+            vinyls.title,
+            vinyls.imgUrl AS vinylImg,
+            genres.genreName,
+            formats.formatName,
+            DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate,
+            vinyls.price,
+            vinyls.nAvailable,
+            authors.name AS authorName
+        FROM vinyls
+        LEFT JOIN genres ON genres.id = vinyls.genreId
+        LEFT JOIN formats ON formats.id = vinyls.formatId
+        LEFT JOIN authors ON authors.id = vinyls.authorId
+        WHERE vinyls.releaseDate <= CURRENT_DATE()
+        ORDER BY vinyls.releaseDate DESC
+        LIMIT 15;
+    `;
 
-//     connection.query(sql, (err, results) => {
-//         if (err) return res.status(500).json({ error: err })
-//         //console.log(results)
-//         else res.json(results)
-//         console.log("recent route used!")
-//     })
-// }
+    connection.query(sql, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err });
+        }
+        res.json(results);
+        console.log("recent route used!");
+    });
+}
+
+
 //filter by genre route
-// function by_genre(req, res) {
-//     const genre = req.body.genre;
-//     const sql = `
-//                 SELECT *
-//                 FROM vinyls
-//                 WHERE genre = ?
-//                 LIMIT 10;`
+function by_genre(req, res) {
+    const genre = req.body.genre;
 
-//     connection.query(sql, [genre], (err, results) => {
-//         if (err) return res.status(500).json({ error: err })
-//         //console.log(results)
-//         else res.json(results)
-//         console.log("by_genre route used!")
-//     })
-// }
+    const sql = `
+        SELECT 
+            vinyls.slug,
+            vinyls.title,
+            vinyls.imgUrl AS vinylImg,
+            genres.genreName,
+            formats.formatName,
+            DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate,
+            vinyls.price,
+            vinyls.nAvailable,
+            authors.name AS authorName
+        FROM vinyls
+        LEFT JOIN genres ON genres.id = vinyls.genreId
+        LEFT JOIN formats ON formats.id = vinyls.formatId
+        LEFT JOIN authors ON authors.id = vinyls.authorId
+        WHERE genres.genreName = ?
+        ORDER BY vinyls.releaseDate DESC
+        LIMIT 15;
+    `;
+
+    connection.query(sql, [genre], (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(results);
+        console.log("by_genre route used!");
+    });
+}
+
+function by_format(req, res) {
+    const format = req.body.format;
+
+    const sql = `
+        SELECT 
+            vinyls.slug,
+            vinyls.title,
+            vinyls.imgUrl AS vinylImg,
+            genres.genreName,
+            formats.formatName,
+            DATE_FORMAT(vinyls.releaseDate, '%d-%m-%Y') AS releaseDate,
+            vinyls.price,
+            vinyls.nAvailable,
+            authors.name AS authorName
+        FROM vinyls
+        LEFT JOIN genres ON genres.id = vinyls.genreId
+        LEFT JOIN formats ON formats.id = vinyls.formatId
+        LEFT JOIN authors ON authors.id = vinyls.authorId
+        WHERE formats.formatName = ?
+        ORDER BY vinyls.releaseDate DESC
+        LIMIT 15;
+    `;
+
+    connection.query(sql, [format], (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(results);
+        console.log("by_format route used!");
+    });
+}
+
 
 // function store(req, res) {
 //     res.send("this is the store route!")
@@ -218,8 +279,9 @@ function filter_vinyls(req, res) {
 module.exports = {
     index,
     show,
-    //recent,
-    //by_genre,
+    recent,
+    by_genre,
+    by_format,
     filter_vinyls,
     //store,
     //update,

@@ -9,9 +9,11 @@ router.get('/single-vinyl/:slug', vinyl_controller.show)
 
 router.get('/search', vinyl_controller.filter_vinyls)
 
-//router.get('/recent', vinyl_controller.recent)
+router.get('/recent', vinyl_controller.recent)
 
-//router.post('/by_genre', vinyl_controller.by_genre)
+router.post('/by_genre', vinyl_controller.by_genre)
+
+router.post('/by_format', vinyl_controller.by_format)
 
 //router.post('/', vinyl_controller.store)
 
