@@ -15,11 +15,13 @@ router.post('/by_genre', vinyl_controller.by_genre)
 
 router.post('/by_format', vinyl_controller.by_format)
 
+router.patch('/update_quantity/:slug', vinyl_controller.update_quantity)
+
 //router.post('/', vinyl_controller.store)
 
 //router.put('/:slug', vinyl_controller.update)
 
-//router.patch('/:slug', vinyl_controller.modify)
+
 
 //router.delete('/:slug', vinyl_controller.destroy)
 

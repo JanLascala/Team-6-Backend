@@ -74,7 +74,8 @@ function show(req, res) {
 function filter_vinyls(req, res) {
     const { filter, search } = req.query;
     let sql = `
-        SELECT 
+        SELECT
+            vinyls.id as productId,
             vinyls.slug,
             vinyls.title,
             vinyls.imgUrl AS vinylImg,
@@ -111,6 +112,7 @@ function filter_vinyls(req, res) {
     if (filter === "all") {
         sql = `
             SELECT 
+                vinyls.id as productId,
                 vinyls.slug,
                 vinyls.title,
                 vinyls.imgUrl AS vinylImg,
@@ -173,6 +175,7 @@ function filter_vinyls(req, res) {
 function recent(req, res) {
     const sql = `
         SELECT 
+            vinyls.id as productId,
             vinyls.slug,
             vinyls.title,
             vinyls.imgUrl AS vinylImg,
@@ -207,6 +210,7 @@ function by_genre(req, res) {
 
     const sql = `
         SELECT 
+            vinyls.id as productId,
             vinyls.slug,
             vinyls.title,
             vinyls.imgUrl AS vinylImg,
@@ -237,6 +241,7 @@ function by_format(req, res) {
 
     const sql = `
         SELECT 
+            vinyls.id as productId,
             vinyls.slug,
             vinyls.title,
             vinyls.imgUrl AS vinylImg,
@@ -262,6 +267,35 @@ function by_format(req, res) {
     });
 }
 
+function update_quantity(req, res) {
+    const { slug } = req.params;
+    const { nAvailable } = req.body;
+
+    if (nAvailable < 0) {
+        return res.status(400).json({ error: 'nAvailable cannot be negative' });
+    }
+
+    const sql = `
+      UPDATE vinyls
+      SET nAvailable = ?
+      WHERE slug = ?;
+    `;
+
+    connection.query(sql, [nAvailable, slug], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to update vinyl availability' });
+        }
+
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ error: 'Vinyl not found' });
+        }
+
+        res.json({ message: 'Vinyl availability updated successfully' });
+    });
+
+
+}
+
 
 // function store(req, res) {
 //     res.send("this is the store route!")
@@ -283,6 +317,7 @@ module.exports = {
     by_genre,
     by_format,
     filter_vinyls,
+    update_quantity,
     //store,
     //update,
     //modify,
