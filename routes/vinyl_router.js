@@ -15,7 +15,7 @@ router.post('/by_genre', vinyl_controller.by_genre)
 
 router.post('/by_format', vinyl_controller.by_format)
 
-router.patch('/update_quantity/:slug', vinyl_controller.update_quantity)
+router.patch('/update_quantity', vinyl_controller.update_quantity)
 
 //router.post('/', vinyl_controller.store)
 

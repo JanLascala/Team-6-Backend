@@ -268,34 +268,50 @@ function by_format(req, res) {
 }
 
 function update_quantity(req, res) {
-    const { slug } = req.params;
-    const { nAvailable } = req.body;
+    console.log("update_quantity route used!");
 
-    if (nAvailable < 0) {
-        return res.status(400).json({ error: 'nAvailable cannot be negative' });
+    const updates = req.body.updates;
+    //console.log(updates)
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+        return res.status(400).json({ error: 'Invalid or empty updates array' });
     }
 
-    const sql = `
-      UPDATE vinyls
-      SET nAvailable = ?
-      WHERE slug = ?;
-    `;
+    const failed = [];
+    let completed = 0;
 
-    connection.query(sql, [nAvailable, slug], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to update vinyl availability' });
-        }
+    updates.forEach(({ slug, nAvailable }) => {
+        const sql = `
+            UPDATE vinyls
+            SET nAvailable = ?
+            WHERE slug = ?;
+        `;
 
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ error: 'Vinyl not found' });
-        }
-
-        res.json({ message: 'Vinyl availability updated successfully' });
+        connection.query(sql, [nAvailable, slug], (err, results) => {
+            if (err) {
+                failed.push({ slug, error: 'Database error' });
+            } else if (results.affectedRows === 0) {
+                failed.push({ slug, error: 'Vinyl not found' });
+            }
+            checkCompletion();
+        });
     });
 
-
+    function checkCompletion() {
+        completed++;
+        if (completed === updates.length) {
+            if (failed.length > 0) {
+                console.log(failed)
+                return res.status(207).json({
+                    message: 'Some updates failed',
+                    failed,
+                });
+            } else {
+                return res.json({ message: 'All vinyls updated successfully' });
+            }
+        }
+    }
 }
-
 
 // function store(req, res) {
 //     res.send("this is the store route!")
