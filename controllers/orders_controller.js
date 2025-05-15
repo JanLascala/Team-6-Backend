@@ -60,6 +60,7 @@ async function create_payment_intent(req, res) {
             amount: totalAmount,
             currency: 'usd',
             automatic_payment_methods: { enabled: true },
+            capture_method: 'manual',
             description,
             metadata: {
                 customerName,
@@ -253,8 +254,59 @@ function update_order_entry(req, res) {
     });
 }
 
+async function capture_payment(req, res) {
+    const { paymentIntentId, orderId } = req.body;
+
+    if (!paymentIntentId || !orderId) {
+        return res.status(400).json({ error: 'paymentIntentId and orderId are required.' });
+    }
+
+    try {
+        const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+
+        const updateOrderSql = 'UPDATE orders SET status = ? WHERE id = ?';
+        connection.query(updateOrderSql, ['succeeded', orderId], (err) => {
+            if (err) {
+                console.error("Failed to update order status after capture:", err);
+                return res.status(500).json({ error: 'Failed to update order status.' });
+            }
+
+            res.json({ message: 'Payment captured and order updated.', paymentIntent });
+        });
+    } catch (error) {
+        console.error('Error capturing payment intent:', error);
+        res.status(500).json({ error: error.message || 'Failed to capture payment.' });
+    }
+}
+
+async function cancel_payment(req, res) {
+    const { paymentIntentId, orderId } = req.body;
+
+    if (!paymentIntentId || !orderId) {
+        return res.status(400).json({ error: 'paymentIntentId and orderId are required.' });
+    }
+
+    try {
+        const canceledPaymentIntent = await stripe.paymentIntents.cancel(paymentIntentId);
+        const updateOrderSql = 'UPDATE orders SET status = ? WHERE id = ?';
+        connection.query(updateOrderSql, ['canceled', orderId], (err) => {
+            if (err) {
+                console.error("Failed to update order status after cancel:", err);
+                return res.status(500).json({ error: 'Failed to update order status.' });
+            }
+
+            res.json({ message: 'Payment canceled and order updated.', canceledPaymentIntent });
+        });
+    } catch (error) {
+        console.error('Error canceling payment intent:', error);
+        res.status(500).json({ error: error.message || 'Failed to cancel payment.' });
+    }
+}
+
 
 module.exports = {
     create_payment_intent,
-    update_order_entry
+    update_order_entry,
+    capture_payment,
+    cancel_payment
 }
