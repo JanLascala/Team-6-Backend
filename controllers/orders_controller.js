@@ -60,7 +60,6 @@ async function create_payment_intent(req, res) {
             amount: totalAmount,
             currency: 'usd',
             automatic_payment_methods: { enabled: true },
-            capture_method: 'manual',
             description,
             metadata: {
                 customerName,
